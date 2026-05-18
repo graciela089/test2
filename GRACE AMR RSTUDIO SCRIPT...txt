@@ -1,0 +1,672 @@
+# clear working environment 
+rm(list = ls())
+#
+# 
+# # load packages 
+
+library(tidyverse)
+library(treedataverse)
+library(ape)
+library(readxl)
+library(phangorn)
+library(viridis)
+library(ggnewscale)
+library(ggtree)
+library(labeling)
+library(ggplot2)
+library(grid)
+
+#read an newick file
+e.coli <- read.tree("IQ-TREE.E.coli.nhx")
+ggtree(e.coli)
+
+
+#read metadata file
+metadata.e.coli <- read_excel("metadata_E_coli.xlsx") %>%
+  mutate(WWTP=as.factor(WWTP))
+
+
+# check if similar tip labels are present for E.coli and metadata file 
+# checktip labels for e,coli
+e.coli$tip.label
+
+#check tip labels for metadata file 
+metadata.e.coli$ID
+
+# check if there are differences in the tip labels  and sample names
+# they are supposed to be the same and therefore the output is supposed to be nothing
+
+# if present the samples names of the tree and of the metadata are varying
+setdiff(e.coli$tip.label, 
+        metadata.e.coli$ID)
+
+# convert the metadata file variables from hyphen to underscore 
+metadata.e.coli <- metadata.e.coli %>%
+  mutate(ID=str_replace_all(ID, "-", "_" ))
+
+
+#midpoint the tree
+e.coli <- midpoint(e.coli)
+ggtree(e.coli)
+
+
+
+#remove reference
+#?drop.tip()
+
+#remove reference tips are supposed to be colored based on WWTP so three colors
+# uncomment line to visualize
+e.coli<- drop.tip(e.coli, "Reference")
+e.colitree<- ggtree(e.coli) %<+% metadata.e.coli +
+ # geom_tippoint(aes(color = WWTP))+
+  geom_treescale() 
+
+e.colitree
+
+#Extracting the WWTP column from metadata.e.coli and converting it into a dataframe
+
+meta.WWTP <- as.data.frame(metadata.e.coli[,'WWTP'])
+
+#Assigning names to columns and rows to the new WWTP data frame
+rownames(meta.WWTP) <- metadata.e.coli$ID
+colnames(meta.WWTP) <- "WWTP"
+
+#Display structure of an object/variable
+str(meta.WWTP)
+
+#Draw heatmap
+t1 <- gheatmap(e.colitree, 
+         meta.WWTP,
+         width = 0.08, 
+         colnames_position = "top",
+         colnames_angle = 90, 
+         font.size = 5,
+         colnames_offset_y = 0.2) +
+    scale_fill_manual(values = c("red4", "sandybrown", "aquamarine4")) +
+  labs(fill=("WWTP")) +
+  new_scale_fill()
+print(t1)
+
+#See parameters for gheatmap package
+help("gheatmap")
+
+#Extracting the Sample type column from metadata.e.coli and converting it into a dataframe
+meta.Sample.type <- as.data.frame(metadata.e.coli[,'Sample type'])
+
+#Assigning names to columns and rows to the new Sample type data frame
+rownames(meta.Sample.type) <- metadata.e.coli$ID
+colnames(meta.Sample.type) <- "Sample type"
+
+#Display structure of an object/variable
+str(meta.Sample.type)
+
+#Draw heatmap
+t2 <- gheatmap(t1, 
+         meta.Sample.type,
+         width = 0.08, offset = 0.03, 
+         colnames_position = "top",
+         colnames_angle = 90,
+         font.size = 4,
+         colnames_offset_y = 0.3) +
+  scale_fill_manual(values = c("aquamarine", "azure4")) +
+  labs(fill= ("Sample type")) +
+  new_scale_fill()
+print(t2)
+
+#Extracting the ST column from metadata.e.coli and converting it into a dataframe
+
+meta.ST <- as.data.frame(metadata.e.coli[,'ST'])
+
+#Assigning names to columns and rows to the new WWTP data frame
+rownames(meta.ST) <- metadata.e.coli$ID
+colnames(meta.ST) <- "ST"
+
+#Display structure of an object/variable
+str(meta.ST)
+
+#Draw heatmap
+t3 <- gheatmap(t2, 
+               meta.ST,
+               width = 0.08, offset = 0.06, 
+               colnames_position = "top",
+               colnames_angle = 90,
+               font.size = 5,
+               colnames_offset_y = 0.2) +
+  scale_fill_manual(values = c("forestgreen", "lightpink4", "darkorange", "blue3", "blueviolet", "brown2", "chartreuse1", "coral4", "cornsilk4", "darkgoldenrod", "darkolivegreen1")) +
+  labs(fill= ("ST")) +
+  new_scale_fill()
+print(t3)
+
+#Extracting the Phylogroups column from metadata.e.coli and converting it into a dataframe
+
+meta.Phylogroups <- as.data.frame(metadata.e.coli[,'Phylogroups'])
+
+#Assigning names to columns and rows to the new WWTP data frame
+rownames(meta.Phylogroups) <- metadata.e.coli$ID
+colnames(meta.Phylogroups) <- "Phylogroups"
+
+#Display structure of an object/variable
+str(meta.Phylogroups)
+
+#Draw heatmap
+t4 <- gheatmap(t3, 
+               meta.Phylogroups,
+               width = 0.08, offset = 0.09, 
+               colnames_position = "top",
+               colnames_angle = 90,
+               font.size = 5,
+               colnames_offset_y = 0.2) +
+  scale_fill_manual(values = c("burlywood3", "darkseagreen", "burlywood4", "khaki", "lightgreen")) +
+  labs(fill= ("Phylogroups")) +
+  new_scale_fill()
+print(t4)
+
+
+#Reading and extracting the e.coli_ARGS table and converting it into a dataframe
+
+e.coli_ARG <- read_excel("e.coli_ARG.xlsx") %>%
+  as.data.frame() %>%
+  column_to_rownames(var = "ID") %>%
+  select(sort(names(.))) %>%
+  mutate(across(everything(), as.factor))
+  
+#plot tree
+t5 <- gheatmap(t4, 
+               e.coli_ARG,
+               offset = 0.2,
+               hjust = 0.5,
+               colnames_position = "top",
+               colnames_angle = 90,
+               font.size = 4,
+               colnames_offset_y = 0.2) +
+  scale_fill_manual(values = c("goldenrod4", "darkseagreen3")) +
+  labs(fill= ("ARG")) +
+  new_scale_fill()
+
+print(t5)
+
+#save heatmap
+ggsave("Results/t5.tiff", height = 10, width = 12, dpi = 300)
+
+#Reading and extracting the e.coli.mutation.gene table and converting it into a dataframe
+
+e.coli.mutation.gene <- read_excel("e.coli.mutation.gene.xlsx") %>%
+  as.data.frame() %>%
+  column_to_rownames(var = "ID") %>%
+  select(sort(names(.))) %>%
+  mutate(across(everything(), as.factor))
+
+#plot tree
+t6 <- gheatmap(t5, 
+               e.coli.mutation.gene,
+               offset = 0.6,
+               hjust = 0.5,
+               colnames_position = "top",
+               colnames_angle = 90,
+               font.size = 2.5,
+               colnames_offset_y = 0.3) +
+  scale_fill_manual(values = c("bisque3", "darkcyan")) +
+  labs(fill= ("Mutation gene")) +
+  new_scale_fill()
+
+print(t6)
+
+#save heatmap
+ggsave("results/t6.tiff", height = 10, width = 12, dpi = 300)
+
+#Reading and extracting the e.coli.plasmid table and converting it into a dataframe
+
+e.coli.plasmid <- read_excel("E.coli_Plasmid.xlsx") %>%
+  as.data.frame() %>%
+  column_to_rownames(var = "ID") %>%
+  select(sort(names(.))) %>%
+  mutate(across(everything(), as.factor))
+
+#plot tree
+t7 <- gheatmap(t6, 
+               e.coli.plasmid,
+               offset = 1.1,
+               hjust = 0.5,
+               colnames_position = "top",
+               colnames_angle = 90,
+               font.size = 2.4,
+               colnames_offset_y = 0.3) +
+  scale_fill_manual(values = c("coral4", "darkslateblue")) +
+  labs(fill= ("Plasmid replicon")) +
+  new_scale_fill()
+
+print(t7)
+
+#save heatmap
+ggsave("results/t7.tiff", height = 12, width = 20, dpi = 300)
+
+
+e.coli
+e.coli$tip.label
+e.coli$node.label
+e.coli_ARG$ID
+setdiff(e.coli$tip.label,e.coli_ARG$ID)
+
+#KLEB HEATMAP
+#read an newick file
+kleb <- read.tree("IQ-TREE.Kleb.nhx")
+ggtree(kleb)
+
+#read metadata file
+metadata.kleb <- read_excel("metadata.kleb.xlsx") %>%
+  mutate(WWTP=as.factor(WWTP))
+
+# check if similar tip labels are present for kleb and metadata file 
+# checktip labels for kleb
+kleb$tip.label
+
+#check tip labels for metadata file 
+metadata.kleb$ID
+
+# check if there are differences in the tip labels  and sample names
+# they are supposed to be the same and therefore the output is supposed to be nothing
+
+# if present the samples names of the tree and of the metadata are varying
+setdiff(kleb$tip.label, 
+        metadata.kleb$ID)
+
+# convert the metadata file variables from hyphen to underscore 
+metadata.kleb <- metadata.kleb %>%
+  mutate(ID=str_replace_all(ID, "-", "_" ))
+
+#midpoint the tree
+kleb <- midpoint(kleb)
+ggtree(kleb)
+
+#remove reference
+#?drop.tip()
+
+#remove reference tips are supposed to be colored based on WWTP so three colors
+# uncomment line to visualize
+kleb<- drop.tip(kleb, "Reference")
+klebtree<- ggtree(kleb) %<+% metadata.kleb +
+  # geom_tippoint(aes(color = WWTP))+
+  geom_treescale() 
+
+#Check difference between the labels in the tree tips and nodes and metadata table
+kleb
+kleb$tip.label
+kleb$node.label
+kleb_ARG$ID
+metadata.kleb$ID
+setdiff(kleb$tip.label,kleb_ARG$ID)
+setdiff(kleb$tip.label,metadata.kleb$ID)
+
+#Extracting the WWTP column from metadata.kleb and converting it into a dataframe
+
+meta.WWTP.kleb <- as.data.frame(metadata.kleb[,'WWTP'])
+
+#Assigning names to columns and rows to the new WWTP data frame
+rownames(meta.WWTP.kleb) <- metadata.kleb$ID
+colnames(meta.WWTP.kleb) <- "WWTP"
+
+#Display structure of an object/variable
+str(meta.WWTP.kleb)
+
+#Draw heatmap
+t1kleb <- gheatmap(klebtree, 
+               meta.WWTP.kleb,
+               width = 0.08, 
+               colnames_position = "top",
+               colnames_angle = 90,
+               font.size = 5,
+               colnames_offset_y = 0.2) +
+  scale_fill_manual(values = c("red4", "sandybrown", "aquamarine4", "indianred")) +
+ labs(fill=("WWTP")) +
+   new_scale_fill()
+
+print(t1kleb)
+
+#Extracting the Sample type column from metadata.kleb and converting it into a dataframe
+
+meta.Sample.type.kleb <- as.data.frame(metadata.kleb[,'Sample type'])
+
+#Assigning names to columns and rows to the new Sample type data frame
+rownames(meta.Sample.type.kleb) <- metadata.kleb$ID
+colnames(meta.Sample.type.kleb) <- "Sample type"
+
+#Display structure of an object/variable
+str(meta.Sample.type.kleb)
+
+#Draw heatmap
+t2kleb <- gheatmap(t1kleb, 
+                   meta.Sample.type.kleb,
+                   width = 0.08, offset = 0.05,  
+                   colnames_position = "top",
+                   colnames_angle = 90,
+                   font.size = 4,
+                   colnames_offset_y = 0.15) +
+  scale_fill_manual(values = c("aquamarine", "azure4")) +
+  labs(fill= ("Sample type")) +
+  new_scale_fill()
+
+print(t2kleb)
+
+#Extracting the ST column from metadata.kleb and converting it into a dataframe
+
+meta.ST.kleb <- as.data.frame(metadata.kleb[,'ST'])
+
+#Assigning names to columns and rows to the new ST data frame
+rownames(meta.ST.kleb) <- metadata.kleb$ID
+colnames(meta.ST.kleb) <- "ST"
+
+#Display structure of an object/variable
+str(meta.ST.kleb)
+
+#Draw heatmap
+t3kleb <- gheatmap(t2kleb, 
+                   meta.ST.kleb,
+                   width = 0.08, offset = 0.1,  
+                   colnames_position = "top",
+                   colnames_angle = 90,
+                   font.size = 5,
+                   colnames_offset_y = 0.2) +
+  scale_fill_manual(values = c("forestgreen", "lightpink4", "darkorange", "blue3", "blueviolet", "brown2", "chartreuse1", "coral4", "cornsilk4")) +
+  labs(fill= ("ST")) +
+  new_scale_fill()
+
+print(t3kleb)
+
+#Extracting the K.Locus column from metadata.kleb and converting it into a dataframe
+
+meta.K.Locus.kleb <- as.data.frame(metadata.kleb[,'K.Locus'])
+
+#Assigning names to columns and rows to the new K.Locus data frame
+rownames(meta.K.Locus.kleb) <- metadata.kleb$ID
+colnames(meta.K.Locus.kleb) <- "K.Locus"
+
+#Display structure of an object/variable
+str(meta.K.Locus.kleb)
+
+#Draw heatmap
+t4kleb <- gheatmap(t3kleb, 
+                   meta.K.Locus.kleb,
+                   width = 0.08, offset = 0.15,  
+                   colnames_position = "top",
+                   colnames_angle = 90,
+                   font.size = 5,
+                   colnames_offset_y = 0.2) +
+  scale_fill_manual(values = c("cornflowerblue", "burlywood4", "darkolivegreen", "darkslateblue", "deeppink4", "lightgreen", "plum4", "coral", "red3", "bisque3", "yellow3")) +
+  labs(fill= ("K.Locus")) +
+  new_scale_fill()
+
+print(t4kleb)
+
+#Extracting the O.Locus column from metadata.kleb and converting it into a dataframe
+
+meta.O.Locus.kleb <- as.data.frame(metadata.kleb[,'O.Locus'])
+
+#Assigning names to columns and rows to the new O.Locus data frame
+rownames(meta.O.Locus.kleb) <- metadata.kleb$ID
+colnames(meta.O.Locus.kleb) <- "O.Locus"
+
+#Display structure of an object/variable
+str(meta.O.Locus.kleb)
+
+#Draw heatmap
+t5kleb <- gheatmap(t4kleb, 
+                   meta.O.Locus.kleb,
+                   width = 0.08, offset = 0.2,  
+                   colnames_position = "top",
+                   colnames_angle = 90,
+                   font.size = 5,
+                   colnames_offset_y = 0.2) +
+  scale_fill_manual(values = c("cornflowerblue", "burlywood4", "darkolivegreen", "darkslateblue")) +
+  labs(fill= ("O.Locus")) +
+  new_scale_fill()
+
+print(t5kleb)
+
+
+#Reading and extracting the kleb_ARGS table and converting it into a dataframe
+
+kleb_ARG <- read_excel("kleb_ARG.xlsx") %>%
+  as.data.frame() %>%
+  column_to_rownames(var = "ID") %>%
+  select(sort(names(.))) %>%
+  mutate(across(everything(), as.factor))
+
+#plot tree
+t6kleb <- gheatmap(t5kleb, 
+               kleb_ARG,
+               offset = 0.3,
+               hjust = 0.5,
+               colnames_position = "top",
+               colnames_angle = 90,
+               font.size = 3,
+               colnames_offset_y = 0.2) +
+  scale_fill_manual(values = c("goldenrod4", "darkseagreen3")) +
+  labs(fill= ("ARG")) +
+  new_scale_fill()
+
+print(t6kleb)
+
+#Reading and extracting the kleb.mutation.gene table and converting it into a dataframe
+
+kleb.mutation.gene <- read_excel("kleb.mutation.gene.xlsx") %>%
+  as.data.frame() %>%
+  column_to_rownames(var = "ID") %>%
+  select(sort(names(.))) %>%
+  mutate(across(everything(), as.factor))
+
+#plot tree
+t7kleb <- gheatmap(t6kleb, 
+                   kleb.mutation.gene,
+                   offset = 1.0,
+                   hjust = 0.5,
+                   colnames_position = "top",
+                   colnames_angle = 90,
+                   font.size = 4,
+                   colnames_offset_y = 0.2) +
+  scale_fill_manual(values = c("bisque3", "darkcyan")) +
+  labs(fill= ("Mutation gene")) +
+  new_scale_fill()
+
+print(t7kleb)
+
+
+
+ggsave("results/t7kleb.tiff", height = 12, width = 20, dpi = 300)
+
+#Reading and extracting the kleb.plasmid table and converting it into a dataframe
+
+kleb.plasmid <- read_excel("kleb.plasmid.xlsx") %>%
+  as.data.frame() %>%
+  column_to_rownames(var = "ID") %>%
+  select(sort(names(.))) %>%
+  mutate(across(everything(), as.factor))
+
+#plot tree
+t8kleb.plasmid <- gheatmap(t7kleb, 
+               kleb.plasmid,
+               offset = 1.8,
+               hjust = 0.5,
+               colnames_position = "top",
+               colnames_angle = 90,
+               font.size = 3.2,
+               colnames_offset_y = 0.2) +
+  scale_fill_manual(values = c("coral4", "darkslateblue")) +
+  labs(fill= ("Plasmid replicon")) +
+  new_scale_fill()
+
+print(t8kleb.plasmid)
+
+#save tree
+ggsave("results/t8kleb.plasmid.tiff", height = 13, width = 20, dpi = 300)
+
+#ENTEROBACTER CLOCAE
+#read an newick file
+enterobacter <- read.tree("IQ-TREE.Enterobacter.cloace.nhx")
+ggtree(enterobacter)
+
+#read metadata file
+metadata.enterobacter <- read_excel("metadata.Enterobacter.xlsx") %>%
+  mutate(WWTP=as.factor(WWTP))
+
+# check if similar tip labels are present for enterobacter and metadata file 
+# checktip labels for enterobacter
+enterobacter$tip.label
+
+#check tip labels for metadata file 
+metadata.enterobacter$ID
+
+# check if there are differences in the tip labels  and sample names
+# they are supposed to be the same and therefore the output is supposed to be nothing
+
+# if present the samples names of the tree and of the metadata are varying
+setdiff(enterobacter$tip.label, 
+        metadata.enterobacter$ID)
+
+# convert the metadata file variables from hyphen to underscore 
+metadata.enterobacter <- metadata.enterobacter %>%
+  mutate(ID=str_replace_all(ID, "-", "_" ))
+
+#midpoint the tree
+enterobacter <- midpoint(enterobacter)
+ggtree(enterobacter)
+
+#remove reference
+#?drop.tip()
+
+#remove reference tips are supposed to be colored based on WWTP so three colors
+# uncomment line to visualize
+enterobacter<- drop.tip(enterobacter, "Reference")
+enterobactertree<- ggtree(enterobacter) %<+% metadata.enterobacter +
+  # geom_tippoint(aes(color = WWTP))+
+  geom_treescale() 
+
+enterobacter
+enterobacter$tip.label
+enterobacter$node.label
+metadata.enterobacter$ID
+setdiff(enterobacter$tip.label,metadata.enterobacter$ID)
+
+#Extracting the WWTP column from metadata.enterobacter and converting it into a dataframe
+
+meta.WWTP.enterobacter <- as.data.frame(metadata.enterobacter[,'WWTP'])
+
+#Assigning names to columns and rows to the new WWTP data frame
+rownames(meta.WWTP.enterobacter) <- metadata.enterobacter$ID
+colnames(meta.WWTP.enterobacter) <- "WWTP"
+
+#Display structure of an object/variable
+str(meta.WWTP.enterobacter)
+
+#Draw heatmap
+t1enterobacter <- gheatmap(enterobactertree, 
+                   meta.WWTP.enterobacter,
+                   width = 0.09, 
+                   colnames_position = "top",
+                   colnames_angle = 90,
+                   font.size = 7,
+                   colnames_offset_y = 0.1) +
+  scale_fill_manual(values = c("red4", "sandybrown", "aquamarine4")) +
+  labs(fill=("WWTP")) +
+  new_scale_fill()
+
+print(t1enterobacter)
+
+#Extracting the Sample type column from metadata.enterobacter and converting it into a dataframe
+
+meta.Sample.type.enterobacter <- as.data.frame(metadata.enterobacter[,'Sample type'])
+
+#Assigning names to columns and rows to the new Sample type data frame
+rownames(meta.Sample.type.enterobacter) <- metadata.enterobacter$ID
+colnames(meta.Sample.type.enterobacter) <- "Sample type"
+
+#Display structure of an object/variable
+str(meta.Sample.type.enterobacter)
+
+#Draw heatmap
+t2enterobacter <- gheatmap(t1enterobacter, 
+                   meta.Sample.type.enterobacter,
+                   width = 0.09, offset = 0.02,  
+                   colnames_position = "top",
+                   colnames_angle = 90,
+                   font.size = 6,
+                   colnames_offset_y = 0.3) +
+  scale_fill_manual(values = c("aquamarine", "azure4")) +
+  labs(fill= ("Sample type")) +
+  new_scale_fill()
+
+print(t2enterobacter)
+
+#Extracting the ST column from metadata.enterobacter and converting it into a dataframe
+
+meta.ST.enterobacter <- as.data.frame(metadata.enterobacter[,'ST'])
+
+#Assigning names to columns and rows to the new ST data frame
+rownames(meta.ST.enterobacter) <- metadata.enterobacter$ID
+colnames(meta.ST.enterobacter) <- "ST"
+
+#Display structure of an object/variable
+str(meta.ST.enterobacter)
+
+#Draw heatmap
+t3enterobacter <- gheatmap(t2enterobacter, 
+                   meta.ST.enterobacter,
+                   width = 0.09, offset = 0.04,  
+                   colnames_position = "top",
+                   colnames_angle = 90,
+                   font.size = 7,
+                   colnames_offset_y = 0.1) +
+  scale_fill_manual(values = c("forestgreen", "lightpink4", "darkorange", "blue3")) +
+  labs(fill= ("ST")) +
+  new_scale_fill()
+
+print(t3enterobacter)
+
+#Reading and extracting the enterobacter_ARGS table and converting it into a dataframe
+
+enterobacter_ARG <- read_excel("enterobacter_ARG.xlsx") %>%
+  as.data.frame() %>%
+  column_to_rownames(var = "ID") %>%
+  select(sort(names(.))) %>%
+  mutate(across(everything(), as.factor))
+
+#plot tree
+t4enterobacter <- gheatmap(t3enterobacter, 
+                   enterobacter_ARG,
+                   offset = 0.1,
+                   hjust = 0.5,
+                   colnames_position = "top",
+                   colnames_angle = 90,
+                   font.size = 7,
+                   colnames_offset_y = 0.3) +
+  scale_fill_manual(values = c("goldenrod4", "darkseagreen3")) +
+  labs(fill= ("ARG")) +
+  new_scale_fill()
+
+print(t4enterobacter)
+
+ggsave("results/t4enterobacter.tiff", height = 8, width = 10)
+
+#Reading and extracting the enterobacter.plasmid table and converting it into a dataframe
+
+enterobacter.plasmid <- read_excel("enterobacter.plasmid.xlsx") %>%
+  as.data.frame() %>%
+  column_to_rownames(var = "ID") %>%
+  select(sort(names(.))) %>%
+  mutate(across(everything(), as.factor))
+
+#plot tree
+t5enterobacter.plasmid <- gheatmap(t4enterobacter, 
+                           enterobacter.plasmid,
+                           offset = 0.4,
+                           hjust = 0.5,
+                           colnames_position = "top",
+                           colnames_angle = 90,
+                           font.size = 5.5,
+                           colnames_offset_y = 0.4) +
+  scale_fill_manual(values = c("coral4", "darkslateblue")) +
+  labs(fill= ("Plasmid replicon")) +
+  new_scale_fill()
+
+print(t5enterobacter.plasmid)
+
+ggsave("results/t5enterobacter.plasmid.tiff", height = 12, width = 20, dpi = 300)
